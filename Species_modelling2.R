@@ -115,7 +115,7 @@ model<-MaxEnt(sdmdata[,-c(1:3)],sdmdata[,3],removeDuplicates=TRUE)
 #We've also asked the model to ignore any data that comes from the same cell.
 #In the maxent call we first specify the climate data - these are in all the columns except the first one.
 #Next we specify the presence/background data - column1 i.e. [,3]
-
+model
 plot(model)
 
 # look at the predicted climate suitability globally, and see how it matches where the species has been recorded
@@ -135,9 +135,16 @@ bio_fut<-cmip6_world(model='ACCESS-ESM1-5', ssp='245', time='2041-2060', var='bi
 fut_predictors<-crop(bio_fut,e)
 
 # compare baseline to future climates for any of our variables
-plot(predictors,2)
-plot(fut_predictors,2)
+plot(predictors,19)
+plot(fut_predictors,19) # 19 was my species most important variable
 
 # generate a future prediction for climate suitability for my species
 names(fut_predictors)<-names(predictors)
 
+fut_predictedocc <- predict(model, fut_predictors, args=c("outputformat=raw")) 
+
+par(mfrow=c(2,1))
+plot(predictedocc,main="current")
+
+plot(fut_predictedocc,main="2050")
+# the area on the map that is light blue is smaller in 2050, suggesting species distribution is going to decline
