@@ -2,6 +2,8 @@ install.packages("geodata",dependencies=TRUE,repos="https://cloud.r-project.org"
 library(geodata)
 library(terra)
 
+# data preparation
+#download ring ouzel and climate data from Learn
 avi_dat <- read.table('~/Documents/WorkingD/BUP/Species distribution modelling/Data_SwissBreedingBirds copy.csv', header=T, sep=',')
 nrow(avi_dat)
 summary(avi_dat)
@@ -13,7 +15,7 @@ ouzel_df <- data.frame(avi_dat)[ouzel_cols]
 
 summary(ouzel_df)
 
-# Enter working directory for this data, download climate data
+# Enter working directory for this data, download current and future climate data for switzerland
 output_dir<-"~/Documents/WorkingD/BUP/Species distribution modelling"
 
 bio_curr <-worldclim_country("Switzerland",version="2.1", var='bio', res=10, lon=5.5, lat=45.5, path=output_dir)[[c(2,5,14)]]
@@ -47,4 +49,7 @@ plot(bio_fut) # future
 ## MODEL FITTING
 # Can you code a binomial GLM with all three predictors fitted as linear and squared terms?
 
+model <- glm( Turdus_torquatus ~ bio_2 + I(bio_2^2) + bio_5 + I(bio_5^2) + bio_14 + I(bio_14^2), family='binomial', data=ouzel_df)
+
+summary(model) # bio 5 and 4 has a strong effect from the summary
 
