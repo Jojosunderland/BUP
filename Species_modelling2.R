@@ -67,6 +67,77 @@ bg<-spatSample(predictors,5000,"random", na.rm=TRUE, as.points=TRUE,ext=e)
 
 #Here we'll plot our background points on a map of climwin variable 1 (you could change this to any of the worldclim variables)
 plot(predictors, 1)
-points(bg, cex=0.1, col='lightsalmon')
+points(bg, cex=0.1, col='red')
 
+##Matching occurrence and climate data
+
+occlatlon<-cbind(occ$lon,occ$lat)
+presvals <- extract(predictors, occlatlon)
+#presvals is the climate data for where the species is present
+backvals <- values(bg)
+#backvals is the climate data for the background data
+bg_lonlat<-geom(bg)
+lonlats<-rbind(occlatlon, bg_lonlat[,c("x","y")])
+pb <- c(rep(1, nrow(presvals)), rep(0, nrow(backvals)))
+#The first column of the dataset is a vector of 1s for presences and 0s for background data.
+sdmdata <- data.frame(cbind(lonlats,pb, rbind(presvals, backvals)))
+#here we combine the presence and background data into a single data frame
+
+## examine how colinear predictor variables are
+pairs(sdmdata[,4:7], cex=0.1)
+
+## Fitting a species distribution model
+
+sdmdata<-subset(sdmdata,is.na(bio_1)==F)
+#here we're just removing a couple of rows where the climate data are NAs.
+
+
+specdata<-as.data.frame(cbind(rep("Bradypus Linnaeus",length(sdmdata[,1])),
+                              sdmdata))
+
+names(specdata)[1:4]<-c("species","longitude","latitude","presabs")
+
+specdata<-subset(specdata,presabs==1)
+
+backdata<-as.data.frame(cbind(rep("background",length(sdmdata[,1])),
+                              sdmdata))
+
+names(backdata)[1:4]<-c("","longitude","latitude","presabs")
+
+backdata<-subset(backdata,presabs==0)
+
+
+write.table(specdata[,-4],paste(output_dir,"/BradypusLinnaeus_swd.csv",sep=""),col.names=T,row.names=F,sep=",")
+write.table(backdata[,-4],paste(output_dir,"/background.csv",sep=""),col.names=T,row.names=F,sep=",")
+
+model<-MaxEnt(sdmdata[,-c(1:3)],sdmdata[,3],removeDuplicates=TRUE)
+#Here we've used all of the climate variables, but you could be more discerning. 
+#We've also asked the model to ignore any data that comes from the same cell.
+#In the maxent call we first specify the climate data - these are in all the columns except the first one.
+#Next we specify the presence/background data - column1 i.e. [,3]
+
+plot(model)
+
+# look at the predicted climate suitability globally, and see how it matches where the species has been recorded
+predictedocc <- predict(model, predictors, args=c("outputformat=raw")) 
+
+par(mfrow=c(2,1))
+plot(predictedocc)
+plot(predictedocc)
+points(occlatlon,pch=".", col='pink')
+
+## Predicting future distributions
+# we need future climate data
+
+# download climate data
+bio_fut<-cmip6_world(model='ACCESS-ESM1-5', ssp='245', time='2041-2060', var='bioc', res=10, path=output_dir)
+
+fut_predictors<-crop(bio_fut,e)
+
+# compare baseline to future climates for any of our variables
+plot(predictors,2)
+plot(fut_predictors,2)
+
+# generate a future prediction for climate suitability for my species
+names(fut_predictors)<-names(predictors)
 
