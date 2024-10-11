@@ -36,7 +36,7 @@ head(nestdata)
 ##QUESTION: How might you estimate per capita reproduction from these data?
 #calculate the average hatching success and average number of chicks using the mean() function
 HatchingSuc <- mean(nestdata$hatchingsuc)
-FledglingNo <- mean(nestdata$chickno[nestdata$hatchingsuc==1])
+FledglingNo <- mean(nestdata$chickno)
 
 #data frame has a row for each unique nest, column for max number of clutchno for each unique value of nestid
 nests <- data.frame(nestid = sort(unique(nestdata$nestid)), numberofclutches=tapply(nestdata$clutchno, nestdata$nestid, max))
@@ -49,3 +49,81 @@ ClutchNo <- mean(nests$numberofclutches)
 
 
 ## Deterministic population model
+
+#We now have the numbers we need to parameterise a deterministic model. 
+#We need a 3x3 matrix with the fertility transitions along the top row, and the survival transitions on the subsequent rows
+# save our estimates of the vital rates
+R <- (ClutchNo * HatchingSuc * FledglingNo) / 2
+Phi.juv <- survival$estimate[survival$stage=='Juvenile'] 
+Phi.yr <- survival$estimate[survival$stage=='Yearling'] 
+Phi.ad <- survival$estimate[survival$stage=='Adult'] 
+
+# remind ourselves how these relate to the transition probabilities of the matrix (see slides)
+# Juvenile to Juvenile: Phi.juv * R
+# Yearling to Juvenile: Phi.yr * R
+# Adult to Juvenile: Phi.ad * R
+# Juvenile to Yearling: Phi.juv
+# Yearling to Yearling: 0 
+# Adult to Yearling: 0 
+# Juvenile to Adult: 0
+# Yearling to Adult: Phi.yr
+# Adult to Adult: Phi.ad
+
+# put the transition probabilities into a vector 
+sparrowMPM <- c(Phi.juv * R, Phi.yr * R, Phi.ad * R, Phi.juv, 0, 0, 0, Phi.yr, Phi.ad)
+
+# save that vector as a matrix, specifying the number of rows and columns
+# use the byrow=TRUE argument to tell R that the first the elements of the vector correspond to the first row of the matrix 
+sparrowMPM <- matrix(sparrowMPM, nrow=3, ncol=3, byrow=T)
+sparrowMPM
+
+#We can now use the popbio package to do some analyses of our deterministic MPM
+lambda(sparrowMPM) #population growth rate (lambda)
+
+## QUESTION: What does this tell us about they dynamics of our sparrow population?
+# tells us that our population is growing (at a rate of 1.03 a year)
+
+#Projected Dynamics:
+#We can project the dynamics over a given number of iterations (t) based on our matrix and a starting population (n0).
+# project over 15 years
+t <- 15
+# start with 50 juveniles, 20 yearlings and 30 adults
+n0 <- c(50,20,30)
+
+# project dynamics 
+projection <- pop.projection(sparrowMPM, n0, iterations = t)
+projected <- data.frame(time=1:15, N=projection$pop.sizes)
+
+# plot projected pop size over time
+ggplot(projected, aes(time, N)) + 
+  geom_line() + ylim(0,150) + ylab('Projected N') #The population is projected to increase over time since lambda>1
+
+#Observed Dynamics:
+#We can compare this with estimated population counts (N) over the 15 study years, saved in the file ‘popest.txt’
+popest <- read.table("~/Documents/WorkingD/BUP/Population Dynamics/MPM practical/popest.txt", header = TRUE, sep = '\t')
+head(popest)
+
+# plot N over time
+ggplot(popest, aes(year, N)) + 
+  geom_line() + ylim(0,200) + ylab('Observed N')
+
+## QUESTION: How does this population trajectory compare with our estimate of lambda?
+#the trajectory suggests declines at some time intervals as well as inclines whereas lambda just projected increases
+# declines are probably due to stochasticity and environmental factors
+
+#Stable stage distribution and reproductive value:
+#popbio has built-in functions for other analyses of the asymptotic dynamics of our matrix
+#he stable stage distribution of our population is the long-term average relative abundance of the different stage classes
+#the reproductive values of the different stage classes are the expected contribution of each individual in that stage class to future reproduction
+
+stages <- c('Juv','Yr','Ad')
+colnames(sparrowMPM) <- stages
+rownames(sparrowMPM) <- stages
+
+stable.stage(sparrowMPM)
+
+reproductive.value(sparrowMPM)
+
+
+## Pertubation analysis
+
