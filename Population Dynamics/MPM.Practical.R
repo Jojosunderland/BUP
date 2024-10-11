@@ -126,4 +126,32 @@ reproductive.value(sparrowMPM)
 
 
 ## Pertubation analysis
+#popbio also includes built-in functions to calculate the sensitivities and elasticities of the different vital rates
+#these tell us about the relative importance of each vital rate (or matrix transition) in determining the population growth rate, lambda.
 
+# REMEMBER:
+#sensitivities estimate the change in lambda for an absolute change in a vital rate 
+#elasticities tell us about the effect of a proportional change
+
+# list the vital rates
+sparrow.param <- list(Phi.juv = Phi.juv, Phi.yr = Phi.yr, Phi.ad = Phi.ad, R = R)
+
+# give the matrix equation 
+sparrow.equation <- expression(Phi.juv * R, Phi.yr * R, Phi.ad * R, Phi.juv, 0, 0, 0, Phi.yr, Phi.ad)
+
+# run the sensitivity analysis
+sens <- vitalsens(sparrow.equation, sparrow.param)
+sens
+
+# plot elasticity of the vital rates 
+sens$vitalrate <- factor(c('Phi.juv', 'Phi.yr', 'Phi.ad', 'R'), levels = c('Phi.juv', 'Phi.yr', 'Phi.ad', 'R'))
+ggplot(sens, aes(vitalrate, elasticity)) + 
+  geom_bar(stat = 'identity') 
+
+##QUESTIONa: Which vital rates are most important for population growth? Is this similar to the orca example that we saw in the lecture? 
+# juvenile survival estimate is lowest, and has the highest elasticity and sensitivity
+# this suggests improvements in juvenile survival can lead to a substantial increase in population growth
+
+##QUESTIONb: Is this what you would expect based on the life-history of the species?
+# The findings are consistent with life-history strategies where species with longer lifespans and lower reproductive rates (like orcas) typically have higher sensitivity to juvenile survival. 
+# This suggests a life-history strategy focused on ensuring offspring survival to maintain population levels
