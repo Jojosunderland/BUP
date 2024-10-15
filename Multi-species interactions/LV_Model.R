@@ -271,5 +271,11 @@ ggplot(data = out.df)+
   labs(x = "Time", y = "P")
 
 
+##Q: with these parameters which species survive?
+##A: species 2 survives, species 1 and 3 go extinct (they're overlapped as they have the same K)
+
+# if you change the distance and width of each niche of the species you'll get different outcomes
+# the bigger w and the smaller d the more overlap with other niches and more competition
+
 
 
