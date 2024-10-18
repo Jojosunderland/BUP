@@ -320,6 +320,7 @@ for(t in 2:nsteps){
     M.death <- M[t-1]*(1-H[t-1]/(H[t-1]+hh))
     M.pred <-  W[t-1]*eM*M[t-1]/(M[t-1]+dM)
     M[t] <- max(0,M[t-1] + M.growth - M.death - M.pred - M[t-1]*mM) # moose
+    # added moose hunting
     
     ## Predator
     W.growth <- (b*(C[t-1]/(dC+C[t-1])) + b*(M[t-1]/(dM+M[t-1])))*W[t-1]
