@@ -343,3 +343,5 @@ ggplot(data = pop.df.0)+
   labs(x = "Time", y = "Densities", color="Legend")+
   scale_color_manual(values = colors)
 
+
+
